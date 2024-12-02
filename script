@@ -1,52 +1,56 @@
+-- Client-side only script
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Prevent server-side manipulations
 game.Players.LocalPlayer.Character:BreakJoints()
-game.Players.LocalPlayer.Character=nil
-Connection = game.Workspace.DescendantAdded:Connect(function(c)
+game.Players.LocalPlayer.Character = nil
+
+local connection = game.Workspace.DescendantAdded:Connect(function(c)
     if c.Name == "Animate" then
-        c.Disabled=true        
+        c.Disabled = true
     end
 end)
-repeat wait() until game.Players.LocalPlayer.Character
-Char = game.Players.LocalPlayer.Character
-Died = game.Players.LocalPlayer.Character:WaitForChild("Humanoid").Died:Connect(function()
-    Connection:Disconnect()
-    Died:Disconnect()
-end)
-wait(.1)
 
+repeat wait() until game.Players.LocalPlayer.Character
+local char = game.Players.LocalPlayer.Character
+
+-- Local Died event to clean up
+local humanoid = char:WaitForChild("Humanoid")
+local diedConnection
+diedConnection = humanoid.Died:Connect(function()
+    connection:Disconnect()
+    diedConnection:Disconnect()
+end)
+
+wait(0.1)
+
+-- Helper function for waiting for a child
 function waitForChild(parent, childName)
-    local child = parent:findFirstChild(childName)
+    local child = parent:FindFirstChild(childName)
     if child then return child end
     while true do
-        child = parent.ChildAdded:wait()
-        if child.Name==childName then return child end
+        child = parent.ChildAdded:Wait()
+        if child.Name == childName then return child end
     end
 end
 
--- ANIMATION
-
--- declarations
-local Figure = game.Players.LocalPlayer.Character
-local Torso = waitForChild(Figure, "Torso")
-local RightShoulder = waitForChild(Torso, "Right Shoulder")
-local LeftShoulder = waitForChild(Torso, "Left Shoulder")
-local RightHip = waitForChild(Torso, "Right Hip")
-local LeftHip = waitForChild(Torso, "Left Hip")
-local Neck = waitForChild(Torso, "Neck")
-local Humanoid = waitForChild(Figure, "Humanoid")
+-- Declarations
+local torso = waitForChild(char, "Torso")
+local rightShoulder = waitForChild(torso, "Right Shoulder")
+local leftShoulder = waitForChild(torso, "Left Shoulder")
+local rightHip = waitForChild(torso, "Right Hip")
+local leftHip = waitForChild(torso, "Left Hip")
+local neck = waitForChild(torso, "Neck")
+local humanoid = waitForChild(char, "Humanoid")
 local pose = "Standing"
-
 local toolAnim = "None"
 local toolAnimTime = 0
-
 local jumpMaxLimbVelocity = 0.75
 
--- functions
+-- Event functions for animation states
 function onRunning(speed)
-    if speed > 0 then
-        pose = "Running"
-    else
-        pose = "Standing"
-    end
+    pose = (speed > 0) and "Running" or "Standing"
 end
 
 function onDied()
@@ -82,51 +86,47 @@ function onPlatformStanding()
 end
 
 function onSwimming(speed)
-    if speed > 0 then
-        pose = "Running"
-    else
-        pose = "Standing"
-    end
+    pose = (speed > 0) and "Running" or "Standing"
 end
 
+-- Animation functions
 function moveJump()
-    RightShoulder.MaxVelocity = jumpMaxLimbVelocity
-    LeftShoulder.MaxVelocity = jumpMaxLimbVelocity
-    RightShoulder:SetDesiredAngle(3.14)
-    LeftShoulder:SetDesiredAngle(-3.14)
-    RightHip:SetDesiredAngle(0)
-    LeftHip:SetDesiredAngle(0)
+    rightShoulder.MaxVelocity = jumpMaxLimbVelocity
+    leftShoulder.MaxVelocity = jumpMaxLimbVelocity
+    rightShoulder:SetDesiredAngle(3.14)
+    leftShoulder:SetDesiredAngle(-3.14)
+    rightHip:SetDesiredAngle(0)
+    leftHip:SetDesiredAngle(0)
 end
 
--- same as jump for now
 function moveFreeFall()
-    RightShoulder.MaxVelocity = jumpMaxLimbVelocity
-    LeftShoulder.MaxVelocity = jumpMaxLimbVelocity
-    RightShoulder:SetDesiredAngle(3.14)
-    LeftShoulder:SetDesiredAngle(-3.14)
-    RightHip:SetDesiredAngle(0)
-    LeftHip:SetDesiredAngle(0)
+    rightShoulder.MaxVelocity = jumpMaxLimbVelocity
+    leftShoulder.MaxVelocity = jumpMaxLimbVelocity
+    rightShoulder:SetDesiredAngle(3.14)
+    leftShoulder:SetDesiredAngle(-3.14)
+    rightHip:SetDesiredAngle(0)
+    leftHip:SetDesiredAngle(0)
 end
 
 function moveSit()
-    RightShoulder.MaxVelocity = 0.15
-    LeftShoulder.MaxVelocity = 0.15
-    RightShoulder:SetDesiredAngle(3.14 /2)
-    LeftShoulder:SetDesiredAngle(-3.14 /2)
-    RightHip:SetDesiredAngle(3.14 /2)
-    LeftHip:SetDesiredAngle(-3.14 /2)
+    rightShoulder.MaxVelocity = 0.15
+    leftShoulder.MaxVelocity = 0.15
+    rightShoulder:SetDesiredAngle(3.14 / 2)
+    leftShoulder:SetDesiredAngle(-3.14 / 2)
+    rightHip:SetDesiredAngle(3.14 / 2)
+    leftHip:SetDesiredAngle(-3.14 / 2)
 end
 
 function getTool()
-    for _, kid in ipairs(Figure:GetChildren()) do
-        if kid.className == "Tool" then return kid end
+    for _, kid in ipairs(char:GetChildren()) do
+        if kid.ClassName == "Tool" then return kid end
     end
     return nil
 end
 
 function getToolAnim(tool)
     for _, c in ipairs(tool:GetChildren()) do
-        if c.Name == "toolanim" and c.className == "StringValue" then
+        if c.Name == "toolanim" and c.ClassName == "StringValue" then
             return c
         end
     end
@@ -134,26 +134,24 @@ function getToolAnim(tool)
 end
 
 function animateTool()
-    if (toolAnim == "None") then
-        RightShoulder:SetDesiredAngle(1.57)
+    if toolAnim == "None" then
+        rightShoulder:SetDesiredAngle(1.57)
         return
     end
-
-    if (toolAnim == "Slash") then
-        RightShoulder.MaxVelocity = 0.5
-        RightShoulder:SetDesiredAngle(0)
+    if toolAnim == "Slash" then
+        rightShoulder.MaxVelocity = 0.5
+        rightShoulder:SetDesiredAngle(0)
         return
     end
-
-    if (toolAnim == "Lunge") then
-        RightShoulder.MaxVelocity = 0.5
-        LeftShoulder.MaxVelocity = 0.5
-        RightHip.MaxVelocity = 0.5
-        LeftHip.MaxVelocity = 0.5
-        RightShoulder:SetDesiredAngle(1.57)
-        LeftShoulder:SetDesiredAngle(1.0)
-        RightHip:SetDesiredAngle(1.57)
-        LeftHip:SetDesiredAngle(1.0)
+    if toolAnim == "Lunge" then
+        rightShoulder.MaxVelocity = 0.5
+        leftShoulder.MaxVelocity = 0.5
+        rightHip.MaxVelocity = 0.5
+        leftHip.MaxVelocity = 0.5
+        rightShoulder:SetDesiredAngle(1.57)
+        leftShoulder:SetDesiredAngle(1.0)
+        rightHip:SetDesiredAngle(1.57)
+        leftHip:SetDesiredAngle(1.0)
         return
     end
 end
@@ -161,40 +159,37 @@ end
 function move(time)
     local amplitude
     local frequency
-    
-    if (pose == "Jumping") then
+
+    if pose == "Jumping" then
         moveJump()
         return
     end
-
-    if (pose == "FreeFall") then
+    if pose == "FreeFall" then
         moveFreeFall()
         return
     end
-
-    if (pose == "Seated") then
+    if pose == "Seated" then
         moveSit()
         return
     end
 
     local climbFudge = 0
-
-    if (pose == "Running") then
-        if (RightShoulder.CurrentAngle > 1.5 or RightShoulder.CurrentAngle < -1.5) then
-            RightShoulder.MaxVelocity = jumpMaxLimbVelocity
+    if pose == "Running" then
+        if rightShoulder.CurrentAngle > 1.5 or rightShoulder.CurrentAngle < -1.5 then
+            rightShoulder.MaxVelocity = jumpMaxLimbVelocity
         else  
-            RightShoulder.MaxVelocity = 0.15
+            rightShoulder.MaxVelocity = 0.15
         end
-        if (LeftShoulder.CurrentAngle > 1.5 or LeftShoulder.CurrentAngle < -1.5) then
-            LeftShoulder.MaxVelocity = jumpMaxLimbVelocity
+        if leftShoulder.CurrentAngle > 1.5 or leftShoulder.CurrentAngle < -1.5 then
+            leftShoulder.MaxVelocity = jumpMaxLimbVelocity
         else  
-            LeftShoulder.MaxVelocity = 0.15
+            leftShoulder.MaxVelocity = 0.15
         end
         amplitude = 1
         frequency = 9
-    elseif (pose == "Climbing") then
-        RightShoulder.MaxVelocity = 0.5
-        LeftShoulder.MaxVelocity = 0.5
+    elseif pose == "Climbing" then
+        rightShoulder.MaxVelocity = 0.5
+        leftShoulder.MaxVelocity = 0.5
         amplitude = 1
         frequency = 9
         climbFudge = 3.14
@@ -203,30 +198,24 @@ function move(time)
         frequency = 1
     end
 
-    desiredAngle = amplitude * math.sin(time * frequency)
-
-    RightShoulder:SetDesiredAngle(desiredAngle + climbFudge)
-    LeftShoulder:SetDesiredAngle(desiredAngle - climbFudge)
-    RightHip:SetDesiredAngle(-desiredAngle)
-    LeftHip:SetDesiredAngle(-desiredAngle)
+    local desiredAngle = amplitude * math.sin(time * frequency)
+    rightShoulder:SetDesiredAngle(desiredAngle + climbFudge)
+    leftShoulder:SetDesiredAngle(desiredAngle - climbFudge)
+    rightHip:SetDesiredAngle(-desiredAngle)
+    leftHip:SetDesiredAngle(-desiredAngle)
 
     local tool = getTool()
-
     if tool then
-        animStringValueObject = getToolAnim(tool)
-
+        local animStringValueObject = getToolAnim(tool)
         if animStringValueObject then
             toolAnim = animStringValueObject.Value
-            -- message received, delete StringValue
             animStringValueObject.Parent = nil
-            toolAnimTime = time + .3
+            toolAnimTime = time + 0.3
         end
-
         if time > toolAnimTime then
             toolAnimTime = 0
             toolAnim = "None"
         end
-
         animateTool()
     else
         toolAnim = "None"
@@ -234,22 +223,21 @@ function move(time)
     end
 end
 
--- connect events
-Humanoid.Died:connect(onDied)
-Humanoid.Running:connect(onRunning)
-Humanoid.Jumping:connect(onJumping)
-Humanoid.Climbing:connect(onClimbing)
-Humanoid.GettingUp:connect(onGettingUp)
-Humanoid.FreeFalling:connect(onFreeFall)
-Humanoid.FallingDown:connect(onFallingDown)
-Humanoid.Seated:connect(onSeated)
-Humanoid.PlatformStanding:connect(onPlatformStanding)
-Humanoid.Swimming:connect(onSwimming)
+-- Connect events for animation updates
+humanoid.Died:Connect(onDied)
+humanoid.Running:Connect(onRunning)
+humanoid.Jumping:Connect(onJumping)
+humanoid.Climbing:Connect(onClimbing)
+humanoid.GettingUp:Connect(onGettingUp)
+humanoid.FreeFalling:Connect(onFreeFall)
+humanoid.FallingDown:Connect(onFallingDown)
+humanoid.Seated:Connect(onSeated)
+humanoid.PlatformStanding:Connect(onPlatformStanding)
+humanoid.Swimming:Connect(onSwimming)
 
--- main program
-local runService = game:service("RunService");
-
-while Figure.Parent ~= nil do
+-- Main program loop
+local runService = game:GetService("RunService")
+while char.Parent do
     local _, time = wait(0.1)
     move(time)
 end
